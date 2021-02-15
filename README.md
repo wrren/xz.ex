@@ -1,6 +1,21 @@
 # XZ
 
-**TODO: Add description**
+Elixir NIF wrapper for the (XZ/LZMA)[https://tukaani.org/xz/] data compression function library. Presents a very simple interface for 
+compressing and decompressing data using default options for now.
+
+## Examples
+
+```elixir
+iex> input = "Hello World"
+"Hello World"
+iex> {:ok, compressed} = XZ.compress input
+{:ok,
+ <<253, 55, 122, 88, 90, 0, 0, 4, 230, 214, 180, 70, 2, 0, 33, 1, 22, 0, 0, 0,
+   116, 47, 229, 163, 1, 0, 10, 72, 101, 108, 108, 111, 32, 87, 111, 114, 108,
+   100, 0, 0, 198, 205, 181, 199, 103, 116, 116, 62, ...>>}
+iex> {:ok, decompressed} = XZ.decompress compressed
+{:ok, "Hello World"}
+```
 
 ## Installation
 
