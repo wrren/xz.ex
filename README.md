@@ -1,6 +1,6 @@
 # XZ
 
-Elixir NIF wrapper for the (XZ/LZMA)[https://tukaani.org/xz/] data compression function library. Presents a very simple interface for 
+Elixir NIF wrapper for the [XZ/LZMA](https://tukaani.org/xz/) data compression function library. Presents a very simple interface for 
 compressing and decompressing data using default options for now.
 
 ## Examples
@@ -29,6 +29,8 @@ def deps do
   ]
 end
 ```
+
+`xz` requires that `liblzma` be installed on your system prior to being built. `xz` does not currently support Windows.
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
