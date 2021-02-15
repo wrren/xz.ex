@@ -1,5 +1,7 @@
 # XZ
 
+[![Hex.pm](https://img.shields.io/hexpm/v/xz.svg)](https://hex.pm/packages/xz)
+
 Elixir NIF wrapper for the [XZ/LZMA](https://tukaani.org/xz/) data compression function library. Presents a very simple interface for 
 compressing and decompressing data using default options for now.
 
