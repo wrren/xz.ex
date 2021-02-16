@@ -10,27 +10,27 @@ typedef enum
     EX_XZ_MODE_COMPRESS
 } ex_xz_mode;
 
-int ex_xz_write_data(uint8_t* input, size_t input_size, uint8_t** output, size_t* output_offset, size_t* output_size)
+int ex_xz_write_data(uint8_t* input, size_t input_size, ErlNifBinary* output, size_t* output_offset)
 {
     if(input_size > 0)
     {
-        if(*output == NULL)
+        if(output->size == 0)
         {
-            *output         = malloc(input_size);
-            *output_size    = input_size;
-        }
-        else
-        {
-            *output         = realloc(*output, *output_size + input_size);
-            *output_size    = input_size + *output_size;
-
-            if(*output == NULL)
+            if(!enif_alloc_binary(input_size, output))
             {
                 return LZMA_MEM_ERROR;
             }
         }
+        else
+        {
+            if(!enif_realloc_binary(output, output->size + input_size))
+            {
+                enif_release_binary(output);
+                return LZMA_MEM_ERROR;
+            }
+        }
 
-        memcpy(&(*output)[*output_offset], input, input_size);
+        memcpy(&(output->data[*output_offset]), input, input_size);
         *output_offset += input_size;
     }
 
@@ -101,8 +101,7 @@ static ERL_NIF_TERM ex_xz_run(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
     uint8_t input_buffer[BUFSIZ];
     uint8_t output_buffer[BUFSIZ];
 
-    uint8_t* output         = NULL;
-    size_t output_size      = 0;
+    ErlNifBinary output     = { 0, NULL };
     size_t input_offset     = 0;
     size_t output_offset    = 0;
     size_t write_size       = 0;
@@ -119,8 +118,6 @@ static ERL_NIF_TERM ex_xz_run(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
         {
             stream.next_in      = input_buffer;
             stream.avail_in     = (input.size - input_offset) > sizeof(input_buffer) ? sizeof(input_buffer) : (input.size - input_offset);
-            stream.next_out     = output_buffer;
-            stream.avail_out    = sizeof(output_buffer);
 
             memcpy(input_buffer, &(input.data[input_offset]), stream.avail_in);
 
@@ -137,10 +134,15 @@ static ERL_NIF_TERM ex_xz_run(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
         if(stream.avail_out == 0 || ret == LZMA_STREAM_END)
         {
             write_size      = sizeof(output_buffer) - stream.avail_out;
-            write_result    = ex_xz_write_data(output_buffer, write_size, &output, &output_offset, &output_size);
+            write_result    = ex_xz_write_data(output_buffer, write_size, &output, &output_offset);
             
             if(write_result != LZMA_OK)
             {
+                if(output.size > 0)
+                {
+                    enif_release_binary(&output);
+                }
+
                 return ex_xz_make_error(env, ret);
             }
 
@@ -154,18 +156,16 @@ static ERL_NIF_TERM ex_xz_run(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
             {
                 break;
             }
+            if(output.size > 0)
+            {
+                enif_release_binary(&output);
+            }
+
             return ex_xz_make_error(env, ret);
         }
     }
 
-    ERL_NIF_TERM result = ex_xz_make_result(env, output, output_size);
-
-    if(output != NULL)
-    {
-        free(output);
-    }
-
-    return result;
+    return enif_make_tuple2(env, enif_make_atom(env, "ok"), enif_make_binary(env, &output));
 }
 
 static ERL_NIF_TERM ex_xz_decompress(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
