@@ -1,5 +1,4 @@
-ERLANG_PATH ?= $(shell erl -eval 'io:format("~s", [lists:concat([code:root_dir(), "/erts-", erlang:system_info(version), "/include"])])' -s init stop -noshell)
-CFLAGS ?= -O2 -Wall -Wextra -Wno-unused-parameter -I$(ERLANG_PATH)
+CFLAGS ?= -O2 -Wall -Wextra -Wno-unused-parameter -I$(ERL_EI_INCLUDE_DIR)
 
 XZ_SOURCES=$(wildcard c_src/*.c)
 

@@ -1,25 +1,11 @@
-defmodule Mix.Tasks.Compile.Xz do
-  def run(_) do
-    if match? {:win32, _}, :os.type do
-      IO.warn("Windows is not currently supported.")
-      exit(1)
-    else
-      File.mkdir_p("priv")
-      {result, _error_code} = System.cmd("make", [], stderr_to_stdout: true)
-      IO.binwrite result
-    end
-    :ok
-  end
-end
-
 defmodule XZ.MixProject do
   use Mix.Project
 
   def project do
     [
       app: :xz,
-      compilers: [:xz] ++ Mix.compilers,
-      version: "0.1.1",
+      compilers: [:elixir_make] ++ Mix.compilers,
+      version: "0.2.0",
       elixir: "~> 1.11",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -42,7 +28,8 @@ defmodule XZ.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ex_doc, "~> 0.20.2", only: :dev}
+      {:ex_doc, "~> 0.20.2", only: :dev},
+      {:elixir_make, "~> 0.6.2"}
     ]
   end
 
