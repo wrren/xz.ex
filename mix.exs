@@ -38,7 +38,8 @@ defmodule XZ.MixProject do
       name: "xz",
       maintainers: ["Warren Kenny"],
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/wrren/xz.ex"}
+      links: %{"GitHub" => "https://github.com/wrren/xz.ex"},
+      files: ~w(lib Makefile mix.exs mix.lock README.md c_src test .formatter.exs)
     ]
   end
 end
