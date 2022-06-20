@@ -1,0 +1,5 @@
+make: Entering directory `/Users/wkenny/Development/xz.ex'
+mkdir -p priv
+cc -O2 -Wall -Wextra -Wno-unused-parameter -I -fPIC -shared -w -dynamiclib -undefined dynamic_lookup -llzma -o priv/nif.so c_src/nif.c
+make: Leaving directory `/Users/wkenny/Development/xz.ex'
+ 

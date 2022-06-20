@@ -5,7 +5,8 @@ XZ_SOURCES=$(wildcard c_src/*.c)
 ifneq ($(OS),Windows_NT)
 	CFLAGS += -fPIC
 	ifeq ($(shell uname),Darwin)
-		LDFLAGS += -dynamiclib -undefined dynamic_lookup
+		LDFLAGS += -dynamiclib -undefined dynamic_lookup -L/opt/homebrew/lib
+		CFLAGS += -I/opt/homebrew/include
 	else
 		LDFLAGS += -Wl,--no-as-needed
 	endif
