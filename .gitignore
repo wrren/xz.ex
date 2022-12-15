@@ -28,3 +28,6 @@ xz-*.tar
 
 # Ignore the NIF output
 /priv/nif.so
+
+# VSCode Configuration
+.vscode/
