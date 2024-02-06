@@ -72,7 +72,7 @@ static ERL_NIF_TERM ex_xz_make_result(ErlNifEnv* env, uint8_t* data, size_t data
     return enif_make_tuple2(env, enif_make_atom(env, "ok"), enif_make_binary(env, &binary));
 }
 
-static ERL_NIF_TERM ex_xz_run(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int mode)
+static ERL_NIF_TERM ex_xz_run(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[], int mode, lzma_stream* stream)
 {
     ErlNifBinary input;
 
@@ -82,15 +82,14 @@ static ERL_NIF_TERM ex_xz_run(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
     }
 
     int ret             = LZMA_OK;
-    lzma_stream stream  = LZMA_STREAM_INIT;
 
     if(mode == EX_XZ_MODE_COMPRESS)
     {
-        ret = lzma_easy_encoder(&stream, LZMA_PRESET_DEFAULT, LZMA_CHECK_CRC64);
+        ret = lzma_easy_encoder(stream, LZMA_PRESET_DEFAULT, LZMA_CHECK_CRC64);
     }
     else
     {
-        ret = lzma_auto_decoder(&stream, UINT64_MAX, 0);
+        ret = lzma_auto_decoder(stream, UINT64_MAX, 0);
     }
 
     if(ret != LZMA_OK)
@@ -107,21 +106,21 @@ static ERL_NIF_TERM ex_xz_run(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
     size_t write_size       = 0;
     int write_result        = LZMA_OK;
     lzma_action action      = LZMA_RUN;
-    stream.next_in          = NULL;
-    stream.avail_in         = 0;
-    stream.next_out         = output_buffer;
-    stream.avail_out        = sizeof(output_buffer);
+    stream->next_in          = NULL;
+    stream->avail_in         = 0;
+    stream->next_out         = output_buffer;
+    stream->avail_out        = sizeof(output_buffer);
 
     while(true)
     {
-        if(stream.avail_in == 0 && input_offset < input.size)
+        if(stream->avail_in == 0 && input_offset < input.size)
         {
-            stream.next_in      = input_buffer;
-            stream.avail_in     = (input.size - input_offset) > sizeof(input_buffer) ? sizeof(input_buffer) : (input.size - input_offset);
+            stream->next_in      = input_buffer;
+            stream->avail_in     = (input.size - input_offset) > sizeof(input_buffer) ? sizeof(input_buffer) : (input.size - input_offset);
 
-            memcpy(input_buffer, &(input.data[input_offset]), stream.avail_in);
+            memcpy(input_buffer, &(input.data[input_offset]), stream->avail_in);
 
-            input_offset += stream.avail_in;
+            input_offset += stream->avail_in;
 
             if(input_offset == input.size)
             {
@@ -129,11 +128,11 @@ static ERL_NIF_TERM ex_xz_run(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
             }
         }
         
-        ret = lzma_code(&stream, action);
+        ret = lzma_code(stream, action);
 
-        if(stream.avail_out == 0 || ret == LZMA_STREAM_END)
+        if(stream->avail_out == 0 || ret == LZMA_STREAM_END)
         {
-            write_size      = sizeof(output_buffer) - stream.avail_out;
+            write_size      = sizeof(output_buffer) - stream->avail_out;
             write_result    = ex_xz_write_data(output_buffer, write_size, &output, &output_offset);
             
             if(write_result != LZMA_OK)
@@ -143,11 +142,12 @@ static ERL_NIF_TERM ex_xz_run(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
                     enif_release_binary(&output);
                 }
 
+                lzma_end(&stream);
                 return ex_xz_make_error(env, ret);
             }
 
-            stream.next_out     = output_buffer;
-            stream.avail_out    = sizeof(output_buffer);
+            stream->next_out     = output_buffer;
+            stream->avail_out    = sizeof(output_buffer);
         }
 
         if(ret != LZMA_OK)
@@ -170,12 +170,18 @@ static ERL_NIF_TERM ex_xz_run(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
 
 static ERL_NIF_TERM ex_xz_decompress(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    return ex_xz_run(env, argc, argv, EX_XZ_MODE_DECOMPRESS);
+    lzma_stream stream  = LZMA_STREAM_INIT;
+    ERL_NIF_TERM res = ex_xz_run(env, argc, argv, EX_XZ_MODE_DECOMPRESS, &stream);
+    lzma_end(&stream);
+    return res;
 }
 
 static ERL_NIF_TERM ex_xz_compress(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    return ex_xz_run(env, argc, argv, EX_XZ_MODE_COMPRESS);
+    lzma_stream stream  = LZMA_STREAM_INIT;
+    ERL_NIF_TERM res = ex_xz_run(env, argc, argv, EX_XZ_MODE_COMPRESS, &stream);
+    lzma_end(&stream);
+    return res;
 }
 
 
